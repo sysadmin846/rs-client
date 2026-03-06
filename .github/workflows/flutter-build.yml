@@ -727,7 +727,15 @@ jobs:
           rustc -V
 
       - name: Build rustdesk
+        env:
+          RENDEZVOUS_SERVER: ${{ env.RENDEZVOUS_SERVER }}
+          RS_RELAY: ${{ env.RS_RELAY }}
+          API_SERVER: ${{ env.API_SERVER }}
+          RS_PUB_KEY: ${{ env.RS_PUB_KEY }}
         run: |
+          echo "Using RENDEZVOUS_SERVER=${RENDEZVOUS_SERVER}"
+          echo "Using RS_RELAY=${RS_RELAY}"
+          echo "Using API_SERVER=${API_SERVER}"
           if [ "${{ matrix.job.target }}" = "aarch64-apple-darwin" ]; then
             MIN_MACOS_VERSION="12.3"
             sed -i -e "s/MACOSX_DEPLOYMENT_TARGET\=[0-9]*.[0-9]*/MACOSX_DEPLOYMENT_TARGET=${MIN_MACOS_VERSION}/" build.py
