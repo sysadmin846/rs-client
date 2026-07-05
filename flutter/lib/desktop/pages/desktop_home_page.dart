@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/widgets/animated_rotation_widget.dart';
 import 'package:flutter_hbb/common/widgets/custom_password.dart';
+import 'package:flutter_hbb/common/widgets/login.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/connection_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
@@ -91,6 +92,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         child: loadLogo(),
       ),
       buildTip(context),
+      buildAccountAuthEntry(context),
       if (!isOutgoingOnly) buildIDBoard(context),
       if (!isOutgoingOnly) buildPasswordBoard(context),
       FutureBuilder<Widget>(
@@ -427,6 +429,98 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         ],
       ),
     );
+  }
+
+  Widget buildAccountAuthEntry(BuildContext context) {
+    if (bind.isDisableAccount()) {
+      return const Offstage();
+    }
+
+    final textColor = Theme.of(context).textTheme.titleLarge?.color;
+    return Obx(() {
+      final userName = gFFI.userModel.userName.value;
+      final isLogin = userName.isNotEmpty;
+      return Container(
+        margin: const EdgeInsets.only(left: 20, right: 16, top: 4, bottom: 10),
+        child: isLogin
+            ? Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  border: Border.all(color: MyTheme.accent.withOpacity(0.35)),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.verified_user_outlined,
+                      size: 18,
+                      color: MyTheme.accent,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AutoSizeText(
+                            translate('Platform authorized'),
+                            maxLines: 1,
+                            minFontSize: 9,
+                            style: TextStyle(
+                              color: textColor?.withOpacity(0.55),
+                              fontSize: 12,
+                            ),
+                          ),
+                          AutoSizeText(
+                            translate('Authorized as {$userName}'),
+                            maxLines: 1,
+                            minFontSize: 10,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Tooltip(
+                      message: translate('Logout'),
+                      child: InkWell(
+                        onTap: logOutConfirmDialog,
+                        child: Icon(
+                          Icons.logout,
+                          size: 18,
+                          color: textColor?.withOpacity(0.65),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : SizedBox(
+                width: double.infinity,
+                height: 36,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.verified_user_outlined, size: 18),
+                  label: AutoSizeText(
+                    translate('Platform login'),
+                    maxLines: 1,
+                    minFontSize: 10,
+                  ),
+                  onPressed: () async {
+                    final res = await loginDialog();
+                    if (res == true && mounted) {
+                      gFFI.userModel.refreshCurrentUser();
+                      setState(() {});
+                    }
+                  },
+                ),
+              ),
+      );
+    });
   }
 
   Widget buildHelpCards(String updateUrl) {
