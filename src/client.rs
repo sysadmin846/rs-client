@@ -3389,11 +3389,16 @@ pub async fn handle_hash(
     // preset password
     if password.is_empty() {
         if !password_preset.is_empty() {
-            let mut hasher = Sha256::new();
-            hasher.update(password_preset);
-            hasher.update(&hash.salt);
-            let res = hasher.finalize();
-            password = res[..].into();
+            if crate::ticket::is_ticket(password_preset.as_bytes()) {
+                log::info!("预置密码为免密连接票据，保留原文发送");
+                password = password_preset.as_bytes().to_vec();
+            } else {
+                let mut hasher = Sha256::new();
+                hasher.update(password_preset);
+                hasher.update(&hash.salt);
+                let res = hasher.finalize();
+                password = res[..].into();
+            }
             lc.write().unwrap().password_source = Default::default();
         }
     }
