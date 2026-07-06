@@ -102,3 +102,65 @@ After installing the Windows package:
 2. Confirm the home page shows `申请管理员远程` and `生成连接码` below the local ID.
 3. Click `申请管理员远程`; the platform `远程桌面 -> 授权管控 -> 待审批` should show a client request.
 4. Click `生成连接码`; the code should be copied and should work in the platform authorization-control connection-code box for 10 minutes.
+
+## Build Record: 2026-07-06
+
+Source branch:
+
+```text
+remote-auth-client-build-20260706
+```
+
+Source commit:
+
+```text
+e74a7d21d371786425be7d21fe9289c373c17190
+```
+
+GitHub Actions run:
+
+```text
+https://github.com/sysadmin846/rs-client/actions/runs/28770856197
+```
+
+Run result:
+
+```text
+completed / success
+```
+
+Release:
+
+```text
+https://github.com/sysadmin846/rs-client/releases/tag/nightly-20260706-remote-auth-22
+```
+
+Published Windows x64 packages:
+
+- `rustdesk-1.4.4-x86_64.exe`
+- `rustdesk-1.4.4-x86_64.msi`
+
+Published macOS packages:
+
+- `rustdesk-1.4.4-x86_64-x86_64.dmg`
+- `rustdesk-1.4.4-aarch64-aarch64.dmg`
+
+Local download directory on the build operator machine:
+
+```text
+/Users/luwenji/Desktop/rs-client-nightly-remote-auth/nightly-20260706-remote-auth-22
+```
+
+Windows x64 SHA-256 checksums:
+
+```text
+5402e08617989a1f5b94af7826edae4121a8d0e0a2710e3b447ff829d2465a0f  rustdesk-1.4.4-x86_64.exe
+36d220337d6b8a23a307961f31fc94f8d8e25d896247bbe32224e89944103098  rustdesk-1.4.4-x86_64.msi
+```
+
+macOS SHA-256 checksums:
+
+```text
+6c50d33858e1c8a9e0976dbead6e905a2d7b7e89f51e0089b26888da1140c95e  rustdesk-1.4.4-x86_64-x86_64.dmg
+cd3d06d5b886563a4987f82c00381c27a23751f33e084bedaddc30c503b1dbde  rustdesk-1.4.4-aarch64-aarch64.dmg
+```
