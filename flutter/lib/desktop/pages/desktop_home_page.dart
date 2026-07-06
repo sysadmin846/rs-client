@@ -17,6 +17,7 @@ import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/models/server_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:flutter_hbb/plugin/ui_manager.dart';
+import 'package:flutter_hbb/utils/http_service.dart' as http_service;
 import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/utils/platform_channel.dart';
 import 'package:get/get.dart';
@@ -53,6 +54,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
 
   final RxBool _editHover = false.obs;
   final RxBool _block = false.obs;
+  bool _remoteAuthBusy = false;
 
   final GlobalKey _childKey = GlobalKey();
 
@@ -92,6 +94,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       ),
       buildTip(context),
       if (!isOutgoingOnly) buildIDBoard(context),
+      if (!isOutgoingOnly) buildRemoteAuthActions(context),
       if (!isOutgoingOnly) buildPasswordBoard(context),
       FutureBuilder<Widget>(
         future: Future.value(
@@ -288,6 +291,114 @@ class _DesktopHomePageState extends State<DesktopHomePage>
             return buildPasswordBoard2(context, model);
           },
         ));
+  }
+
+  Widget buildRemoteAuthActions(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(left: 20, right: 16, top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton(
+            onPressed:
+                _remoteAuthBusy ? null : () => _submitClientRemoteRequest(false),
+            child: Text(
+              '申请管理员远程',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 6),
+          OutlinedButton(
+            onPressed:
+                _remoteAuthBusy ? null : () => _submitClientRemoteRequest(true),
+            child: Text(
+              '生成连接码',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitClientRemoteRequest(bool codeMode) async {
+    final id = gFFI.serverModel.serverId.text.trim();
+    if (id.isEmpty || id == '-') {
+      showToast('本机 ID 未就绪，请稍后再试');
+      return;
+    }
+    final apiServer =
+        (await bind.mainGetApiServer()).trim().replaceFirst(RegExp(r'/+$'), '');
+    if (apiServer.isEmpty) {
+      showToast('未配置 API Server，不能提交远程申请');
+      return;
+    }
+    setState(() {
+      _remoteAuthBusy = true;
+    });
+    try {
+      final path =
+          codeMode ? '/api/remote_auth/client/code' : '/api/remote_auth/client/request';
+      final response = await http_service.post(
+        Uri.parse('$apiServer$path'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'target_id': id}),
+      );
+      final body = response.body.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode < 200 || response.statusCode >= 300 || body['code'] != 0) {
+        showToast(_remoteAuthMessage(body, '提交失败，请稍后再试'));
+        return;
+      }
+      final data = body['data'] is Map<String, dynamic>
+          ? body['data'] as Map<String, dynamic>
+          : <String, dynamic>{};
+      if (codeMode) {
+        final request = data['request'];
+        var code = (data['connection_code'] ?? '').toString();
+        if (code.isEmpty && request is Map<String, dynamic>) {
+          code = (request['connection_code'] ?? '').toString();
+        }
+        if (code.isNotEmpty) {
+          Clipboard.setData(ClipboardData(text: code));
+          showToast('连接码 $code 已复制，10 分钟内有效');
+        } else {
+          showToast('连接码已生成，请在管理后台查看');
+        }
+      } else {
+        showToast('已提交临时远程申请，等待管理员审批');
+      }
+    } catch (e) {
+      showToast('提交失败：$e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _remoteAuthBusy = false;
+        });
+      }
+    }
+  }
+
+  String _remoteAuthMessage(Map<String, dynamic> body, String fallback) {
+    for (final key in ['message', 'msg', 'error']) {
+      final value = body[key];
+      if (value is String && value.trim().isNotEmpty) {
+        return value;
+      }
+    }
+    final data = body['data'];
+    if (data is Map<String, dynamic>) {
+      for (final key in ['message', 'msg', 'error']) {
+        final value = data[key];
+        if (value is String && value.trim().isNotEmpty) {
+          return value;
+        }
+      }
+    }
+    return fallback;
   }
 
   buildPasswordBoard2(BuildContext context, ServerModel model) {
