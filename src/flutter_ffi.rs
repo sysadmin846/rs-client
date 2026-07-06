@@ -1674,6 +1674,10 @@ pub fn main_get_last_remote_id() -> String {
 }
 
 pub fn main_get_software_update_url() {
+    crate::common::clear_software_update_url();
+    if crate::common::is_software_update_check_disabled() {
+        return;
+    }
     crate::common::check_software_update();
 }
 

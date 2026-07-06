@@ -99,6 +99,16 @@ lazy_static::lazy_static! {
     static ref PUBLIC_IPV6_ADDR: Arc<Mutex<(Option<SocketAddr>, Option<Instant>)>> = Default::default();
 }
 
+#[inline]
+pub fn is_software_update_check_disabled() -> bool {
+    true
+}
+
+#[inline]
+pub fn clear_software_update_url() {
+    *SOFTWARE_UPDATE_URL.lock().unwrap() = "".to_string();
+}
+
 lazy_static::lazy_static! {
     // Is server process, with "--server" args
     static ref IS_SERVER: bool = std::env::args().nth(1) == Some("--server".to_owned());
@@ -940,6 +950,10 @@ pub fn is_modifier(evt: &KeyEvent) -> bool {
 }
 
 pub fn check_software_update() {
+    if is_software_update_check_disabled() {
+        clear_software_update_url();
+        return;
+    }
     if is_custom_client() {
         return;
     }
@@ -953,6 +967,10 @@ pub fn check_software_update() {
 // Because the url is always `https://api.rustdesk.com/version/latest`.
 #[tokio::main(flavor = "current_thread")]
 pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
+    if is_software_update_check_disabled() {
+        clear_software_update_url();
+        return Ok(());
+    }
     let (request, url) =
         hbb_common::version_check_request(hbb_common::VER_TYPE_RUSTDESK_CLIENT.to_string());
     let proxy_conf = Config::get_socks();

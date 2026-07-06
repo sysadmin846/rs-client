@@ -3909,7 +3909,12 @@ void earlyAssert() {
   assert('\1' == '1');
 }
 
+bool get disableSoftwareUpdateCheck => true;
+
 void checkUpdate() {
+  if (disableSoftwareUpdateCheck) {
+    return;
+  }
   if (!isWeb) {
     if (!bind.isCustomClient()) {
       platformFFI.registerEventHandler(
