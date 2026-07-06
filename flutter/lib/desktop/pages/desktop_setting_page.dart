@@ -2002,12 +2002,8 @@ class _AccountState extends State<_Account> {
 
   Widget accountAction() {
     return Obx(() => _Button(
-        gFFI.userModel.userName.value.isEmpty ? 'Login' : 'Logout',
-        () => {
-              gFFI.userModel.userName.value.isEmpty
-                  ? loginDialog()
-                  : logOutConfirmDialog()
-            }));
+        gFFI.userModel.userName.value.isEmpty ? '钉钉认证登录' : '退出钉钉认证',
+        dingTalkLogin));
   }
 
   Widget useInfo() {
@@ -2116,12 +2112,8 @@ class _PluginState extends State<_Plugin> {
 
   Widget accountAction() {
     return Obx(() => _Button(
-        gFFI.userModel.userName.value.isEmpty ? 'Login' : 'Logout',
-        () => {
-              gFFI.userModel.userName.value.isEmpty
-                  ? loginDialog()
-                  : logOutConfirmDialog()
-            }));
+        gFFI.userModel.userName.value.isEmpty ? '钉钉认证登录' : '退出钉钉认证',
+        dingTalkLogin));
   }
 }
 

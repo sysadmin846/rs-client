@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/widgets/animated_rotation_widget.dart';
 import 'package:flutter_hbb/common/widgets/custom_password.dart';
+import 'package:flutter_hbb/common/widgets/login.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/pages/connection_page.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_setting_page.dart';
@@ -309,6 +310,18 @@ class _DesktopHomePageState extends State<DesktopHomePage>
               style: TextStyle(
                 fontSize: 12,
                 color: textColor?.withOpacity(0.6),
+              ),
+            );
+          }),
+          const SizedBox(height: 6),
+          Obx(() {
+            final isLogin = gFFI.userModel.userName.value.trim().isNotEmpty;
+            return ElevatedButton(
+              onPressed: dingTalkLogin,
+              child: Text(
+                isLogin ? '退出钉钉认证' : '钉钉认证登录',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             );
           }),

@@ -388,6 +388,86 @@ class LoginWidgetUserPass extends StatelessWidget {
 
 const kAuthReqTypeOidc = 'oidc/';
 
+Future<bool?> dingTalkLogin() async {
+  if (gFFI.userModel.userName.value.isNotEmpty) {
+    logOutConfirmDialog();
+    return false;
+  }
+
+  final apiServer = (await bind.mainGetApiServer()).trim();
+  if (apiServer.isEmpty) {
+    showToast('未配置 API Server，不能打开钉钉认证');
+    return false;
+  }
+
+  final loginOptions = await UserModel.queryOidcLoginOptions();
+  if (loginOptions.isEmpty) {
+    showToast('平台未返回钉钉认证入口，请检查 API Server 和 OAuth 配置');
+    return false;
+  }
+
+  String? op;
+  for (final item in loginOptions) {
+    if (item is! Map) continue;
+    final name = (item['name'] ?? '').toString().trim();
+    final lowerName = name.toLowerCase();
+    if (lowerName.contains('dingtalk') ||
+        lowerName.contains('ding') ||
+        name.contains('钉钉')) {
+      op = name;
+      break;
+    }
+  }
+  if (op == null && loginOptions.length == 1 && loginOptions.first is Map) {
+    op = ((loginOptions.first as Map)['name'] ?? '').toString().trim();
+  }
+  if (op == null || op.isEmpty) {
+    showToast('未找到钉钉认证入口，请在平台 OAuth 配置中启用钉钉');
+    return false;
+  }
+
+  final tag = gFFI.dialogManager.showLoading('正在打开钉钉认证');
+  try {
+    await bind.mainAccountAuth(op: op, rememberMe: true);
+    String launchedUrl = '';
+    for (var i = 0; i < 180; i++) {
+      await Future.delayed(const Duration(seconds: 1));
+      final result = await bind.mainAccountAuthResult();
+      if (result.isEmpty) continue;
+      final resultMap = jsonDecode(result) as Map<String, dynamic>;
+      final failedMsg = (resultMap['failed_msg'] ?? '').toString();
+      final url = (resultMap['url'] ?? '').toString();
+      final authBody = resultMap['auth_body'];
+      if (url.isNotEmpty && launchedUrl != url) {
+        launchedUrl = url;
+        final launched = await launchUrl(Uri.parse(url),
+            mode: LaunchMode.externalApplication);
+        if (!launched) {
+          showToast('无法打开钉钉认证链接，请检查系统默认浏览器');
+        }
+      }
+      if (authBody is Map<String, dynamic>) {
+        gFFI.userModel.getLoginResponseFromAuthBody(authBody);
+        await UserModel.updateOtherModels();
+        showToast('钉钉认证登录成功');
+        return true;
+      }
+      if (failedMsg.isNotEmpty) {
+        showToast('钉钉认证失败：$failedMsg');
+        return false;
+      }
+    }
+    showToast('钉钉认证超时，请重新点击登录');
+    return false;
+  } catch (e) {
+    showToast('钉钉认证失败：$e');
+    return false;
+  } finally {
+    bind.mainAccountAuthCancel();
+    gFFI.dialogManager.dismissByTag(tag);
+  }
+}
+
 // call this directly
 Future<bool?> loginDialog() async {
   var username =
