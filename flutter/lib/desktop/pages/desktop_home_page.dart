@@ -294,26 +294,29 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   }
 
   Widget buildRemoteAuthActions(BuildContext context) {
+    final textColor = Theme.of(context).textTheme.titleLarge?.color;
     return Container(
       margin: const EdgeInsets.only(left: 20, right: 16, top: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          OutlinedButton(
-            onPressed:
-                _remoteAuthBusy ? null : () => _submitClientRemoteRequest(false),
-            child: Text(
-              '申请管理员远程',
+          Obx(() {
+            final username = gFFI.userModel.userName.value.trim();
+            return Text(
+              username.isEmpty ? '钉钉认证：未登录' : '钉钉认证：$username',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-            ),
-          ),
+              style: TextStyle(
+                fontSize: 12,
+                color: textColor?.withOpacity(0.6),
+              ),
+            );
+          }),
           const SizedBox(height: 6),
           OutlinedButton(
-            onPressed:
-                _remoteAuthBusy ? null : () => _submitClientRemoteRequest(true),
+            onPressed: _remoteAuthBusy ? null : _submitClientRemoteRequest,
             child: Text(
-              '生成连接码',
+              '申请临时远程',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -323,7 +326,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     );
   }
 
-  Future<void> _submitClientRemoteRequest(bool codeMode) async {
+  Future<void> _submitClientRemoteRequest() async {
     final id = gFFI.serverModel.serverId.text.trim();
     if (id.isEmpty || id == '-') {
       showToast('本机 ID 未就绪，请稍后再试');
@@ -339,10 +342,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       _remoteAuthBusy = true;
     });
     try {
-      final path =
-          codeMode ? '/api/remote_auth/client/code' : '/api/remote_auth/client/request';
       final response = await http_service.post(
-        Uri.parse('$apiServer$path'),
+        Uri.parse('$apiServer/api/remote_auth/client/request'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'target_id': id}),
       );
@@ -356,21 +357,11 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       final data = body['data'] is Map<String, dynamic>
           ? body['data'] as Map<String, dynamic>
           : <String, dynamic>{};
-      if (codeMode) {
-        final request = data['request'];
-        var code = (data['connection_code'] ?? '').toString();
-        if (code.isEmpty && request is Map<String, dynamic>) {
-          code = (request['connection_code'] ?? '').toString();
-        }
-        if (code.isNotEmpty) {
-          Clipboard.setData(ClipboardData(text: code));
-          showToast('连接码 $code 已复制，10 分钟内有效');
-        } else {
-          showToast('连接码已生成，请在管理后台查看');
-        }
-      } else {
-        showToast('已提交临时远程申请，等待管理员审批');
-      }
+      final request = data['request'];
+      final requestId = request is Map<String, dynamic> ? request['id'] : null;
+      showToast(requestId == null
+          ? '已提交临时远程申请，等待管理员审批'
+          : '已提交临时远程申请 #$requestId，等待管理员审批');
     } catch (e) {
       showToast('提交失败：$e');
     } finally {
