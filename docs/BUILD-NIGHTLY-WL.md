@@ -9,6 +9,8 @@ This build is for the Wangli remote-control client. It includes the desktop home
 
 After the target user completes DingTalk authorization, administrators can remote directly from the platform. If the target user has not completed DingTalk authorization, administrators must use the approved temporary request or the connection code flow.
 
+The DingTalk authorization button uses the RustDesk API OIDC flow to generate a device-bound web authorization URL. The client should open the external browser as soon as that URL is returned, close the loading dialog immediately, and continue waiting for the authorization result in the background. If no URL is returned, check the RustDesk API OAuth `platform` issuer first.
+
 ## Required Platform APIs
 
 The client uses the configured `api-server` and calls:
