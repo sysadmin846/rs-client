@@ -427,11 +427,20 @@ Future<bool?> dingTalkLogin() async {
   }
 
   final tag = gFFI.dialogManager.showLoading('正在打开钉钉认证');
+  var loadingVisible = true;
+  void dismissLoading() {
+    if (!loadingVisible) return;
+    gFFI.dialogManager.dismissByTag(tag);
+    loadingVisible = false;
+  }
+
   try {
     await bind.mainAccountAuth(op: op, rememberMe: true);
     String launchedUrl = '';
     for (var i = 0; i < 180; i++) {
-      await Future.delayed(const Duration(seconds: 1));
+      await Future.delayed(i == 0
+          ? const Duration(milliseconds: 300)
+          : const Duration(seconds: 1));
       final result = await bind.mainAccountAuthResult();
       if (result.isEmpty) continue;
       final resultMap = jsonDecode(result) as Map<String, dynamic>;
@@ -442,29 +451,38 @@ Future<bool?> dingTalkLogin() async {
         launchedUrl = url;
         final launched = await launchUrl(Uri.parse(url),
             mode: LaunchMode.externalApplication);
+        dismissLoading();
         if (!launched) {
           showToast('无法打开钉钉认证链接，请检查系统默认浏览器');
+          return false;
         }
+        showToast('已打开钉钉认证网页，请在浏览器完成授权');
       }
       if (authBody is Map<String, dynamic>) {
         gFFI.userModel.getLoginResponseFromAuthBody(authBody);
         await UserModel.updateOtherModels();
+        dismissLoading();
         showToast('钉钉认证登录成功');
         return true;
       }
       if (failedMsg.isNotEmpty) {
+        dismissLoading();
         showToast('钉钉认证失败：$failedMsg');
         return false;
       }
     }
-    showToast('钉钉认证超时，请重新点击登录');
+    dismissLoading();
+    showToast(launchedUrl.isEmpty
+        ? '钉钉认证链接生成超时，请检查 API Server 和 OAuth 配置'
+        : '钉钉认证超时，请重新点击登录');
     return false;
   } catch (e) {
+    dismissLoading();
     showToast('钉钉认证失败：$e');
     return false;
   } finally {
     bind.mainAccountAuthCancel();
-    gFFI.dialogManager.dismissByTag(tag);
+    dismissLoading();
   }
 }
 
