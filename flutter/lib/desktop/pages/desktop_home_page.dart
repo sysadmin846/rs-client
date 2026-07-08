@@ -303,8 +303,10 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         children: [
           Obx(() {
             final username = gFFI.userModel.userName.value.trim();
+            final displayName = gFFI.userModel.displayName.value.trim();
+            final name = displayName.isNotEmpty ? displayName : username;
             return Text(
-              username.isEmpty ? '钉钉认证：未认证' : '钉钉认证：已认证',
+              name.isEmpty ? '钉钉认证：未认证' : '钉钉认证：$name',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -316,20 +318,15 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           const SizedBox(height: 6),
           Obx(() {
             final isLogin = gFFI.userModel.userName.value.trim().isNotEmpty;
-            if (isLogin) {
-              return const SizedBox.shrink();
-            }
             return ElevatedButton(
                 onPressed: dingTalkLogin,
                 child: Text(
-                  '钉钉认证登录',
+                  isLogin ? '退出钉钉认证' : '钉钉认证登录',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ));
           }),
-          Obx(() => gFFI.userModel.userName.value.trim().isNotEmpty
-              ? const SizedBox.shrink()
-              : const SizedBox(height: 6)),
+          const SizedBox(height: 6),
           OutlinedButton(
             onPressed: _remoteAuthBusy ? null : _submitClientRemoteRequest,
             child: Text(

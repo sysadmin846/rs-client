@@ -16,6 +16,7 @@ bool refreshingUser = false;
 
 class UserModel {
   final RxString userName = ''.obs;
+  final RxString displayName = ''.obs;
   final RxBool isAdmin = false.obs;
   final RxString networkError = ''.obs;
   bool get isLogin => userName.isNotEmpty;
@@ -98,7 +99,9 @@ class UserModel {
   _updateLocalUserInfo() {
     final userInfo = getLocalUserInfo();
     if (userInfo != null) {
-      userName.value = userInfo['name'];
+      userName.value = userInfo['name'] ?? '';
+      displayName.value =
+          userInfo['display_name'] ?? userInfo['displayName'] ?? '';
     }
   }
 
@@ -110,10 +113,12 @@ class UserModel {
       await gFFI.groupModel.reset();
     }
     userName.value = '';
+    displayName.value = '';
   }
 
   _parseAndUpdateUser(UserPayload user) {
     userName.value = user.name;
+    displayName.value = user.displayName;
     isAdmin.value = user.isAdmin;
     bind.mainSetLocalOption(key: 'user_info', value: jsonEncode(user));
     if (isWeb) {
